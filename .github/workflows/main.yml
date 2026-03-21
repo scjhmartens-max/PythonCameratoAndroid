@@ -22,18 +22,17 @@ jobs:
             cmake libffi-dev libssl-dev autoconf-archive libltdl-dev
           pip3 install --user --upgrade buildozer Cython==3.0.10
 
-      - name: Patch and Update Autotools
-        run: |
-          # Voer autoupdate uit op alle configuratiebestanden die we kunnen vinden
-          find . -name configure.ac -execdir autoupdate \;
-          # Forceer de macro herkenning voor libtool
-          find . -name configure.ac -exec sed -i '/^AC_INIT/a m4_pattern_allow([LT_SYS_SYMBOL_USCORE])' {} \;
-
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Buildozer opschonen en build starten
-          buildozer android clean
+          
+          # Fix: Zorg dat de map bestaat om de FileNotFoundError te voorkomen
+          mkdir -p .buildozer/android/platform/python-for-android
+          
+          # Fix: Pas de deprecated 'android.sdk' aan naar 'android.api' in buildozer.spec
+          sed -i 's/android.sdk =/android.api =/g' buildozer.spec
+          
+          # Start de build (we slaan 'clean' over omdat de GitHub runner al leeg is)
           yes | buildozer android debug
         
       - name: Upload APK
