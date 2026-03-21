@@ -1,42 +1,33 @@
-name: Build APK
+name: Build Camera App
 on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Stabielere versie voor Buildozer
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          python-version: '3.11'
 
-      - name: Install system dependencies
+      - name: Install Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            git zip unzip python3-pip autoconf automake libtool libtool-bin \
-            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 \
-            cmake libffi-dev libssl-dev autoconf-archive libltdl-dev
-          pip3 install --user --upgrade buildozer Cython==3.0.10
+          sudo apt update
+          sudo apt install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.33 kivy  # Specifieke stabiele versies
 
       - name: Build with Buildozer
         run: |
-          export PATH=$PATH:$HOME/.local/bin
-          
-          # Fix: Zorg dat de map bestaat om de FileNotFoundError te voorkomen
+          # We maken de map handmatig aan voor de zekerheid
           mkdir -p .buildozer/android/platform/python-for-android
-          
-          # Fix: Pas de deprecated 'android.sdk' aan naar 'android.api' in buildozer.spec
-          sed -i 's/android.sdk =/android.api =/g' buildozer.spec
-          
-          # Start de build (we slaan 'clean' over omdat de GitHub runner al leeg is)
+          # Buildozer uitvoeren
           yes | buildozer android debug
-        
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: CameraApp-APK
+          name: CameraApp
           path: bin/*.apk
