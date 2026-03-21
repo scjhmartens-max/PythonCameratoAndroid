@@ -1,35 +1,24 @@
-name: Build APK
-on: [push, pull_request]
+- name: Install system dependencies
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y \
+      git zip unzip openjdk-17-jdk python3-pip \
+      autoconf libtool pkg-config zlib1g-dev \
+      libncurses5-dev libncursesw5-dev libtinfo6 \
+      cmake libffi-dev libssl-dev \
+      automake autoconf-archive libltdl-dev
+    pip3 install --user --upgrade buildozer Cython==3.0.10
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+- name: Patch configure.ac for missing macro
+  run: |
+    find . -name configure.ac -exec \
+      sed -i '/^AC_INIT/a m4_pattern_allow([LT_SYS_SYMBOL_USCORE])' {} \;
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk python3-pip \
-            autoconf libtool pkg-config zlib1g-dev \
-            libncurses5-dev libncursesw5-dev libtinfo6 \
-            cmake libffi-dev libssl-dev \
-            automake autoconf-archive
+- name: Run autoupdate on all configure.ac found
+  run: |
+    find . -name configure.ac -execdir autoupdate \;
 
-          pip3 install --user --upgrade buildozer Cython==3.0.10
-
-      - name: Run autoupdate on all configure.ac found
-        run: |
-          find . -name configure.ac -execdir autoupdate \;
-
-      - name: Build with Buildozer
-        run: |
-          export PATH=$PATH:$HOME/.local/bin
-          yes | buildozer android debug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: CameraApp-APK
-          path: bin/*.apk
+- name: Build with Buildozer
+  run: |
+    export PATH=$PATH:$HOME/.local/bin
+    yes | buildozer android debug
