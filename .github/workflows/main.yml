@@ -7,11 +7,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
-          sudo apt update
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev
+          sudo apt-get update
+          # Hier voegen we libtool en autoconf direct toe aan de lijst
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev
           pip3 install --user --upgrade buildozer Cython==3.0.10
+
+      - name: Fix autoconf macros
+        run: |
+          # Voer de fix uit die je had gevonden
+          autoupdate
+          # Soms helpt autoreconf ook om alles fris te genereren
+          autoreconf -i --force || true 
 
       - name: Build with Buildozer
         run: |
@@ -20,6 +28,7 @@ jobs:
           yes | buildozer android debug
         
       - name: Upload APK
+          # Buildozer zet de apk meestal in de 'bin' map
         uses: actions/upload-artifact@v4
         with:
           name: CameraApp-APK
